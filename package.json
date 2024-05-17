@@ -1,7 +1,7 @@
 {
   "name": "video-editing-tools",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,9 +10,13 @@
     "fix": "electron-fix start"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "dayjs": "^1.11.11",
+    "element-plus": "^2.7.3",
     "fluent-ffmpeg": "^2.1.2",
+    "less": "^4.2.0",
     "vue": "^3.4.21"
   },
   "devDependencies": {

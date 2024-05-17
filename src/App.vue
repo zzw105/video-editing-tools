@@ -1,38 +1,127 @@
 <template>
-  <div>
-    <a href="https://electron-vite.github.io" target="_blank">
-      <img src="/electron-vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div class="box">
+    <el-upload
+      ref="upload"
+      class="upload-demo"
+      drag
+      :auto-upload="false"
+      accept="video/mp4"
+      :show-file-list="false"
+      v-model:file-list="fileList"
+      :limit="1"
+      @exceed="exceed"
+    >
+      <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+      <div class="el-upload__text">拖拽至此 <em>点击上传</em></div>
+    </el-upload>
+    <div v-if="filePath">
+      <el-form-item label="文件地址">
+        {{ filePath }}
+      </el-form-item>
+      <el-form-item label="时间选择">
+        <el-time-picker
+          v-model="timeList"
+          is-range
+          editable
+          range-separator="到"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+        />
+      </el-form-item>
+
+      <el-button type="primary" @click="click">开始裁剪</el-button>
+      <el-form-item label="消息">
+        {{ logMessage }}
+      </el-form-item>
+    </div>
   </div>
-  <HelloWorld msg="Vite + Vue" />
-  <div @click="click">11111</div>
 </template>
 
 <script setup lang="ts">
-import { ipcRenderer } from "electron/renderer";
-import HelloWorld from "./components/HelloWorld.vue";
-const channel = new MessageChannel();
+import { computed, ref, watch } from "vue";
+import type {
+  UploadUserFile,
+  UploadInstance,
+  UploadRawFile,
+} from "element-plus";
+import { dayjs, genFileId } from "element-plus";
+
+const logMessage = ref("");
+const fileList = ref<UploadUserFile[]>([]);
+const timeList = ref<[Date, Date]>([
+  new Date(2016, 9, 1, 0, 0),
+  new Date(2016, 9, 1, 1, 0),
+]);
+watch(
+  () => fileList.value,
+  (arr) => {
+    console.log(arr);
+
+    if (arr[0]) {
+      console.log(arr[0].raw?.path);
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+const filePath = computed(() => {
+  return fileList.value[0]?.raw?.path;
+});
+
 const click = () => {
-  const port1 = channel.port1;
-  port1.postMessage({ answer: 42 });
-  ipcRenderer.postMessage("port", null, [port1]);
+  console.log(timeList.value);
+  console.log(filePath.value);
+
+  const [startDate, endDate] = timeList.value;
+
+  const getSeconds = (date: Date) => {
+    const day = dayjs(date);
+    const hour = day.hour();
+    const minute = day.minute();
+    const second = day.second();
+    return hour * 3600 + minute * 60 + second;
+  };
+
+  console.log(getSeconds(startDate), getSeconds(endDate));
+
+  window.ipcRenderer.invoke("cut", {
+    sourceFilePath: filePath.value,
+    outFileName: "cut",
+    startTime: getSeconds(startDate) + "",
+    endTime: getSeconds(endDate) - getSeconds(startDate) + "",
+  });
 };
+
+const upload = ref<UploadInstance>();
+
+const exceed = (files: File[]) => {
+  upload.value!.clearFiles();
+  const file = files[0] as UploadRawFile;
+  file.uid = genFileId();
+  upload.value!.handleStart(file);
+};
+
+window.ipcRenderer.on("main-process-message", (_event, message: string) => {
+  if (message.startsWith("frame")) {
+    logMessage.value = message
+      .split(" ")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .join("");
+  } else {
+    logMessage.value = "";
+  }
+});
 </script>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+<style scoped lang="less">
+.box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  .upload-demo {
+    width: 80%;
+  }
 }
 </style>
