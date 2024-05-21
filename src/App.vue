@@ -1,5 +1,15 @@
 <template>
   <div class="box">
+    <video
+      ref="video"
+      id="videoPlayer"
+      width="800"
+      controls
+      src="file:///C:/Users/zzw13/Downloads/cut.mp4"
+    >
+      <!-- <source :src="'file:///' + filePath" type="video/mp4" />
+      Your browser does not support the video tag. -->
+    </video>
     <el-upload
       ref="upload"
       class="upload-demo"
@@ -38,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { VNodeRef, computed, onMounted, ref, watch } from "vue";
 import type {
   UploadUserFile,
   UploadInstance,
@@ -93,6 +103,15 @@ const click = () => {
 };
 
 const upload = ref<UploadInstance>();
+const video = ref(null);
+
+onMounted(() => {
+  console.log(video.value);
+
+  video.value.addEventListener("error", (e) => {
+    console.error("Video error:", e);
+  });
+});
 
 const exceed = (files: File[]) => {
   upload.value!.clearFiles();
