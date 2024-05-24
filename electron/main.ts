@@ -1,9 +1,12 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, protocol } from "electron";
 // import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { cutVideo } from "./ffmpeg";
-
+import { cutVideo, killFFmpegProcess } from "./ffmpeg";
+// log工具
+import log from "electron-log/main";
+log.initialize();
+log.info("Log from the main process");
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,14 +40,18 @@ function createWindow() {
     },
   });
 
-  win.webContents.openDevTools();
   // Test active push message to Renderer-process.
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
   });
 
+  // 隐藏菜单
+  win.setMenu(null);
+
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL);
+    // 开发阶段打开开发者工具
+    win.webContents.openDevTools();
   } else {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, "index.html"));
@@ -70,8 +77,19 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
+  // 开启ffmpeg裁剪进程
   ipcMain.handle("cut", (_e, parameter) => {
     cutVideo(parameter);
   });
+  // 停止ffmpeg进程
+  ipcMain.handle("kill", () => {
+    killFFmpegProcess();
+  });
+  // 用于读取本地视频
+  protocol.registerFileProtocol("atom", (request, callback) => {
+    const url = request.url.substr(7);
+    callback(decodeURI(path.normalize(url)));
+  });
+
   createWindow();
 });

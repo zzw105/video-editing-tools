@@ -1,8 +1,8 @@
 import { spawn } from "child_process";
-import { ipcMain } from "electron";
 import path from "path";
 import { win } from "./main";
-
+import log from "electron-log/main";
+import { ChildProcessWithoutNullStreams } from "child_process";
 // 执行命令
 // const ffmpegProcess = spawn(
 //   `${ffmpegPath} -ss ${startTime} -t ${endTime} -i ${sourceFilePath} -c:v libx264 -c:a aac -strict experimental -b:a 98k ${outFilePath} -y`
@@ -14,6 +14,8 @@ export interface cutVideoParameterType {
   startTime: string;
   endTime: string;
 }
+
+let ffmpegProcess: ChildProcessWithoutNullStreams | null;
 
 export const cutVideo = (parameter: cutVideoParameterType) => {
   const { sourceFilePath, outFileName, startTime, endTime } = parameter;
@@ -28,7 +30,7 @@ export const cutVideo = (parameter: cutVideoParameterType) => {
     "/ffmpeg/bin/ffmpeg.exe"
   );
 
-  const ffmpegProcess = spawn(ffmpegPath, [
+  ffmpegProcess = spawn(ffmpegPath, [
     "-ss",
     startTime,
     "-t",
@@ -48,17 +50,23 @@ export const cutVideo = (parameter: cutVideoParameterType) => {
   ]);
 
   ffmpegProcess.stdout.on("data", (data: string) => {
-    console.log(`stdout: ${data}`);
+    const buffer = Buffer.from(data);
+    const string = buffer.toString("utf8");
+    log.info(string);
   });
 
   ffmpegProcess.stderr.on("data", (data: string) => {
-    console.log(`stderr: ${data}`);
     const buffer = Buffer.from(data);
     const string = buffer.toString("utf8");
     win?.webContents.send("main-process-message", string);
+    log.info(string);
   });
 
   ffmpegProcess.on("close", (code: string) => {
-    console.log(`子进程退出，退出码 ${code}`);
+    log.info(`子进程退出，退出码 ${code}`);
   });
+};
+
+export const killFFmpegProcess = () => {
+  ffmpegProcess?.kill("SIGINT");
 };
