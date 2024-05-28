@@ -1,27 +1,18 @@
-import { app, BrowserWindow, ipcMain, protocol } from "electron";
+import { app, BrowserWindow, ipcMain, protocol, shell } from "electron";
 // import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { cutVideo, killFFmpegProcess } from "./ffmpeg";
 // log工具
 import log from "electron-log/main";
-log.initialize();
-log.info("Log from the main process");
+import dayjs from "dayjs";
+import { deleteOldFiles } from "./utils";
+
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.mjs
-// │
 process.env.APP_ROOT = path.join(__dirname, "..");
 
-// 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
@@ -31,6 +22,15 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST;
 
 export let win: BrowserWindow | null;
+
+deleteOldFiles(path.join(process.env.VITE_PUBLIC, "logs"));
+
+log.initialize();
+log.info("Log from the main process");
+
+// 配置日志
+log.transports.file.resolvePathFn = () =>
+  path.join(process.env.VITE_PUBLIC, `logs/${dayjs().format("YYYYMMDD")}.log`);
 
 function createWindow() {
   win = new BrowserWindow({
@@ -84,6 +84,16 @@ app.whenReady().then(() => {
   // 停止ffmpeg进程
   ipcMain.handle("kill", () => {
     killFFmpegProcess();
+  });
+  // 打开资源管理器
+  ipcMain.handle("openExplorer", (_e, parameter) => {
+    let url: string[] = [process.env.VITE_PUBLIC];
+    if (parameter === "logs") {
+      url = [process.env.VITE_PUBLIC, `logs/${dayjs().format("YYYYMMDD")}.log`];
+    } else {
+      url = parameter;
+    }
+    shell.showItemInFolder(path.join(...url));
   });
   // 用于读取本地视频
   protocol.registerFileProtocol("atom", (request, callback) => {

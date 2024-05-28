@@ -23,6 +23,7 @@
     </div>
     <div class="rightContent">
       <el-scrollbar>
+        <el-icon class="set" @click="goSet"><Setting /></el-icon>
         <router-view />
       </el-scrollbar>
     </div>
@@ -38,6 +39,11 @@ const activeIndex = ref("VideoCropping");
 
 const handleSelect = (key: string) => {
   router.push({ name: key });
+};
+
+const goSet = () => {
+  handleSelect("Set");
+  activeIndex.value = activeIndex.value + "1";
 };
 </script>
 
@@ -65,12 +71,28 @@ const handleSelect = (key: string) => {
     }
   }
   .rightContent {
+    position: relative;
     flex: 1;
     width: 100%;
     height: 100vh;
     padding: 20px;
     background-color: #ececec;
     overflow: hidden;
+    .el-icon.set {
+      position: fixed;
+      right: 10px;
+      top: 10px;
+      background-color: #e3e3e3;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      opacity: 0.3;
+      transition: all 0.3s;
+      cursor: pointer;
+      &:hover {
+        opacity: 1;
+      }
+    }
   }
   .el-scrollbar__view {
     height: 100%;
