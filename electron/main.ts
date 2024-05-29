@@ -26,11 +26,11 @@ export let win: BrowserWindow | null;
 deleteOldFiles(path.join(process.env.VITE_PUBLIC, "logs"));
 
 log.initialize();
-log.info("Log from the main process");
 
 // 配置日志
 log.transports.file.resolvePathFn = () =>
   path.join(process.env.VITE_PUBLIC, `logs/${dayjs().format("YYYYMMDD")}.log`);
+log.info("Log from the main process");
 
 function createWindow() {
   win = new BrowserWindow({
