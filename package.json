@@ -1,11 +1,11 @@
 {
   "name": "video-editing-tools",
   "private": true,
-  "version": "0.5.31",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build && electron-builder",
+    "build": "vite build && electron-builder",
     "electronBuild": "electron-builder",
     "preview": "vite preview",
     "fix": "electron-fix start"

@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, protocol, shell } from "electron";
+import { app, BrowserWindow, ipcMain, protocol, shell, dialog } from "electron";
 // import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs/promises";
 import { cutVideo, killFFmpegProcess } from "./ffmpeg";
 // log工具
 import log from "electron-log/main";
@@ -26,7 +27,6 @@ export let win: BrowserWindow | null;
 deleteOldFiles(path.join(process.env.VITE_PUBLIC, "logs"));
 
 log.initialize();
-
 // 配置日志
 log.transports.file.resolvePathFn = () =>
   path.join(process.env.VITE_PUBLIC, `logs/${dayjs().format("YYYYMMDD")}.log`);
@@ -84,6 +84,20 @@ app.whenReady().then(() => {
   // 停止ffmpeg进程
   ipcMain.handle("kill", () => {
     killFFmpegProcess();
+  });
+  ipcMain.handle("file", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory"],
+    });
+    return result.filePaths[0] || "";
+  });
+  ipcMain.handle("isFileExist", async (_e, file) => {
+    try {
+      await fs.access(file, fs.constants.R_OK | fs.constants.W_OK);
+      return true;
+    } catch (err) {
+      return false;
+    }
   });
   // 打开资源管理器
   ipcMain.handle("openExplorer", (_e, parameter) => {

@@ -46,15 +46,51 @@
         </div>
       </div>
 
+      <div class="outFile">
+        <div class="title">文件地址：</div>
+        <el-input
+          class="outFilePath"
+          v-model="outFilePath"
+          readonly
+          :title="outFilePath"
+          @click="selectFilePath"
+        />
+        <div class="icon">/</div>
+        <el-input
+          v-model="outFileName"
+          class="outFileName"
+          style="max-width: 600px"
+          placeholder="Please input"
+        >
+          <template #append>
+            <el-select
+              v-model="select"
+              placeholder="Select"
+              style="width: 90px"
+            >
+              <el-option label=".mp4" value=".mp4" />
+              <!-- <el-option label=".mp5" value=".mp5" /> -->
+            </el-select>
+          </template>
+        </el-input>
+      </div>
+
       <!-- 交互按钮 -->
       <div class="btnList">
-        <el-button type="primary" @click="click" v-if="!isCut"
-          >开始裁剪</el-button
-        >
+        <el-button type="primary" @click="click()" v-if="!isCut">
+          开始裁剪
+        </el-button>
         <el-button type="danger" @click="stop" v-else>停止裁剪</el-button>
-        <el-button type="primary" @click="cancel" :disabled="isCut"
-          >取消选择</el-button
+        <el-button type="primary" @click="cancel" :disabled="isCut">
+          取消选择
+        </el-button>
+        <el-button
+          type="primary"
+          @click="seeFile"
+          :disabled="isCut || !completeFilePath"
         >
+          查看文件
+        </el-button>
       </div>
 
       <div class="messageBox" v-if="isCut">
@@ -80,7 +116,6 @@
         :limit="1"
         @exceed="exceed"
       >
-        <!-- <source data-v-7a7a37b1="" src="atom:///C:\Users\zzw13\Downloads\cut.mp4" type="video/mp4"> -->
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">拖拽至此 <em>点击上传</em></div>
       </el-upload>
@@ -95,17 +130,32 @@ import type {
   UploadInstance,
   UploadRawFile,
 } from "element-plus";
-import { genFileId } from "element-plus";
+import { ElMessage, ElMessageBox, genFileId } from "element-plus";
 import { FFmpegMessageType, formatFFmpegMessage } from "../utils";
 
 // 当前选择的文件
 const fileList = ref<UploadUserFile[]>([]);
+const outFilePath = ref("");
+const outFileName = ref("");
+const select = ref(".mp4");
+const completeFilePath = ref("");
 
 // 文件地址
 const filePath = computed(() => {
   // return "C:\\Users\\zzw13\\Downloads\\a.mp4";
   return fileList.value[0]?.raw?.path;
 });
+watch(
+  () => filePath.value,
+  (value) => {
+    if (value) {
+      const arr = value?.split("\\");
+      arr.pop();
+      outFilePath.value = arr.join("\\");
+      outFileName.value = "cut";
+    }
+  }
+);
 
 // video播放器url
 const videoFilePath = computed(() => {
@@ -143,15 +193,42 @@ watch(() => startTime.value, changeVideo);
 watch(() => endTime.value, changeVideo);
 
 // 开始裁剪
-const click = () => {
+const click = async (config?: { checkIsFileExist: boolean }) => {
+  const { checkIsFileExist = true } = config || {};
+  if (!filePath.value) {
+    return;
+  }
+  const _outFilePath = `${outFilePath.value}\\${outFileName.value}${select.value}`;
+  if (_outFilePath === filePath.value) {
+    ElMessage.error("源文件不能与输出文件路径完全相同");
+    return;
+  }
+  if (checkIsFileExist) {
+    const res = await window.ipcRenderer.invoke("isFileExist", _outFilePath);
+    if (res) {
+      ElMessageBox.confirm("已存在相同文件名的文件，是否覆盖？", "警告", {
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning",
+      }).then(() => {
+        click({ checkIsFileExist: false });
+      });
+      return;
+    }
+  }
+
   const [startDate, endDate] = sliderTime.value;
   window.ipcRenderer.invoke("cut", {
     sourceFilePath: filePath.value,
-    outFileName: "cut",
+    outFilePath: `${outFilePath.value}\\${outFileName.value}${select.value}`,
     startTime: startDate + "",
     endTime: endDate - startDate + "",
   });
   isCut.value = true;
+};
+
+const seeFile = () => {
+  window.ipcRenderer.invoke("openExplorer", [completeFilePath.value]);
 };
 
 // 取消选择
@@ -194,6 +271,11 @@ const exceed = (files: File[]) => {
   upload.value!.handleStart(file);
 };
 
+const selectFilePath = async () => {
+  const res = await window.ipcRenderer.invoke("file");
+  res && (outFilePath.value = res);
+};
+
 // ffmpeg信息
 const FFmpegMessage = ref<FFmpegMessageType | null>(null);
 const isCut = ref(false);
@@ -217,6 +299,9 @@ window.ipcRenderer.on("main-process-message", (_event, message: string) => {
   } else if (message.startsWith("[out")) {
     FFmpegMessage.value = null;
     isCut.value = false;
+    completeFilePath.value =
+      outFilePath.value + "\\" + outFileName.value + ".mp4";
+    ElMessage.success("裁剪完成");
   } else {
     // logMessage.value = "";
   }
@@ -267,6 +352,21 @@ window.ipcRenderer.on("main-process-message", (_event, message: string) => {
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+    }
+    .outFile {
+      display: flex;
+      width: 80%;
+      margin-bottom: 20px;
+      align-items: center;
+      .title {
+        flex: 0 0 80px;
+      }
+      .icon {
+        margin: 0 5px;
+      }
+      .outFileName {
+        flex: 1 1.2 auto;
       }
     }
     .messageBox {

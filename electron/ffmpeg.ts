@@ -10,7 +10,7 @@ import { ChildProcessWithoutNullStreams } from "child_process";
 
 export interface cutVideoParameterType {
   sourceFilePath: string;
-  outFileName: string;
+  outFilePath: string;
   startTime: string;
   endTime: string;
 }
@@ -18,12 +18,12 @@ export interface cutVideoParameterType {
 let ffmpegProcess: ChildProcessWithoutNullStreams | null;
 
 export const cutVideo = (parameter: cutVideoParameterType) => {
-  const { sourceFilePath, outFileName, startTime, endTime } = parameter;
+  const { sourceFilePath, outFilePath, startTime, endTime } = parameter;
 
-  const outFilePath = path.join(
-    path.dirname(sourceFilePath),
-    `${outFileName}.mp4`
-  );
+  // const outFilePath = path.join(
+  //   path.dirname(sourceFilePath),
+  //   `${outFileName}.mp4`
+  // );
   // 输出当前目录（不一定是代码所在的目录）下的文件和文件夹
   const ffmpegPath = path.join(
     process.env.VITE_PUBLIC,
