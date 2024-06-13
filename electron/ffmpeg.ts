@@ -70,3 +70,6 @@ export const cutVideo = (parameter: cutVideoParameterType) => {
 export const killFFmpegProcess = () => {
   ffmpegProcess?.kill("SIGINT");
 };
+// ffmpeg -f concat -safe 0 -i 111.txt -c copy -y output.mp4
+// file 'C:/Users/zzw13/Documents/WeChat Files/wxid_ml00dgoc7t4h22/FileStorage/File/2024-06/党章 1改/党章 1改/6.mp4'
+// file 'C:/Users/zzw13/Downloads/test/7.mp4'

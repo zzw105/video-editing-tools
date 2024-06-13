@@ -17,6 +17,7 @@
               <span>视频</span>
             </template>
             <el-menu-item index="VideoCropping">裁剪</el-menu-item>
+            <el-menu-item index="VideoMerge">合并</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-scrollbar>
