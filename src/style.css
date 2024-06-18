@@ -14,3 +14,7 @@ html,
 .noTooltip {
   display: none;
 }
+
+.as-c {
+  align-self: center;
+}

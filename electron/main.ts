@@ -3,7 +3,7 @@ import { app, BrowserWindow, ipcMain, protocol, shell, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { cutVideo, killFFmpegProcess } from "./ffmpeg";
+import { cutVideo, killFFmpegProcess, mergeVideo } from "./ffmpeg";
 // log工具
 import log from "electron-log/main";
 import dayjs from "dayjs";
@@ -81,6 +81,10 @@ app.whenReady().then(() => {
   ipcMain.handle("cut", (_e, parameter) => {
     cutVideo(parameter);
   });
+  // 开启ffmpeg合并
+  ipcMain.handle("merge", (_e, parameter) => {
+    mergeVideo(parameter);
+  });
   // 停止ffmpeg进程
   ipcMain.handle("kill", () => {
     killFFmpegProcess();
@@ -99,6 +103,7 @@ app.whenReady().then(() => {
       return false;
     }
   });
+
   // 打开资源管理器
   ipcMain.handle("openExplorer", (_e, parameter) => {
     let url: string[] = [process.env.VITE_PUBLIC];
